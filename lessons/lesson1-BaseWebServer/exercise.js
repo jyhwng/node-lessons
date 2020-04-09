@@ -5,17 +5,24 @@ const fs = require("fs");
 const app = express();
 const port = 3001;
 
-const getJobs = (fullTime, location) => {
-  let queryParams = "?";
+const getQueryParams = (query) =>
+  Object.entries(query).reduce((prev, [key, value], currIdx) => {
+    if (currIdx === 0) {
+      prev += `${key}=${value}`;
+    } else {
+      prev += `&${key}=${value}`;
+    }
+    return prev;
+  }, "?");
 
-  if (location) queryParams += `&location=${location}`;
-  if (fullTime) queryParams += `&full_time`;
+const getJobs = (query) => {
+  const apiEndpoint = `https://jobs.github.com/positions.json${getQueryParams(
+    query
+  )}`;
 
   return axios
-    .get(`https://jobs.github.com/positions.json${queryParams}`)
-    .then((response) => {
-      return response.data;
-    })
+    .get(apiEndpoint)
+    .then((response) => response.data)
     .catch((err) => console.error(err));
 };
 
@@ -31,9 +38,7 @@ const saveData = (data) => {
 };
 
 app.get("/", (req, res) => {
-  const { full_time, location } = req.query;
-
-  getJobs(full_time, location)
+  getJobs(req.query)
     .then((response) => {
       saveData(response);
       return res.send(response);
