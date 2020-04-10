@@ -40,7 +40,7 @@ const addQueryParameters = (baseUrl, query, queryNames) => {
  * @param {function} cb
  */
 const saveToFile = (data, cb) => {
-  fs.writeFile('userdata/data.json', data, (err) => {
+  fs.writeFile(__dirname + '/userdata/data.json', data, (err) => {
     if (err) throw err;
     cb();
   });

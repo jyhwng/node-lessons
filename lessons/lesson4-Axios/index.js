@@ -35,7 +35,7 @@ const getQueryParameters = (query, allowedNames) => {
  */
 const saveToFile = (data) => {
   return new Promise((resolve, reject) => {
-    fs.writeFile('userdata/data.json', data, (err) => {
+    fs.writeFile(__dirname + '/userdata/data.json', data, (err) => {
       if (err) return reject();
       resolve(data);
     });
