@@ -5,8 +5,14 @@ const moment = require('moment');
 const rp = require('request-promise');
 
 const winston = require('winston');
-winston.add(winston.transports.File, { filename: 'storage/logs/nodeJobs.log' });
-winston.remove(winston.transports.Console);
+const logger = winston.createLogger({
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({
+      filename: __dirname + '/storage/logs/nodeJobs.log',
+    }),
+  ],
+});
 
 /**
  * Add query parameters to input query.
@@ -71,7 +77,10 @@ const retrieveJobs = (req, res) => {
  * Middleware which logs to file.
  */
 app.use((req, res, next) => {
-  winston.info(`${moment().format('YYYY-MM-DD HH:mm:SS')}: Incoming ${req.method} request at ${req.url}`);
+  logger.log({
+    level: 'info',
+    message: `${moment().format('YYYY-MM-DD HH:mm:SS')}: Incoming ${req.method} request at ${req.url}`,
+  });
   next();
 });
 
