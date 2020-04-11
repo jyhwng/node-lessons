@@ -1,47 +1,28 @@
 const express = require('express');
-const app = express();
 const axios = require('axios');
+
 const dataLogger = require('./libraries/dataLogger');
 const fileLogger = require('./libraries/fileLogger');
 
-/**
- * Get allowed query parameters and return them in an object.
- *
- * @param {object} query
- * @param {array} allowedNames
- * @return {object}
- */
-const getQueryParameters = (query, allowedNames) => {
-  let queryObject = {};
+const app = express();
+const port = 3001;
 
-  for (const queryName in query) {
-    if (allowedNames.includes(queryName)) {
-      queryObject[queryName] = query[queryName];
-    }
-  }
-
-  return queryObject;
-};
-
-const retrieveJobs = (req, res) => {
+const getJobs = (params) => {
   const baseUrl = 'https://jobs.github.com/positions.json';
-  let data;
 
-  axios.get(baseUrl, { params: getQueryParameters(req.query, ['location', 'full_time']) })
-    .then(response => { return data = response.data })
-    .then(() => { return dataLogger.saveToFile(JSON.stringify(data)) })
-    .then(() => res.json(data))
-    .catch(e => {
-      console.error('ERROR');
-      console.error(e);
-    });
+  return axios
+    .get(baseUrl, { params })
+    .then((response) => response.data)
+    .catch((err) => console.error(err));
 };
 
-/**
- * Use fileLogger middleware.
- */
-app.use(fileLogger);
+app.use('/', fileLogger);
 
-app.get('/', retrieveJobs);
+app.get('/', (req, res) => {
+  getJobs(req.query)
+    .then((data) => dataLogger.saveToFile(JSON.stringify(data), 'userdata/data.json'))
+    .then((response) => res.send(response))
+    .catch((err) => console.error(err));
+});
 
-app.listen(3000, () => console.log('App listening on port 3000!'));
+app.listen(port, () => console.log(`Listening to localhost:${port}`));
