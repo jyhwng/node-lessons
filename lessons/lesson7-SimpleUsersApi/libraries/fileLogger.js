@@ -1,13 +1,25 @@
 const moment = require('moment');
 const winston = require('winston');
+const path = require('path');
 
-winston.add(winston.transports.File, { filename: 'storage/logs/nodeJobs.log' });
-winston.remove(winston.transports.Console);
+const logger = winston.createLogger({
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({
+      filename: path.resolve(__dirname, '../storage/logs/nodeJobs.log'),
+    }),
+  ],
+});
 
 /**
  * Log a timestamp with required route in request.
  */
 module.exports = (req, res, next) => {
-  winston.info(`${moment().format('YYYY-MM-DD HH:mm:SS')}: Incoming ${req.method} request at ${req.url}`);
+  logger.log({
+    url: req.url,
+    level: 'info',
+    method: req.method,
+    timestamp: moment.now(),
+  });
   next();
 };
