@@ -1,112 +1,43 @@
 const express = require('express');
 const router = express.Router();
-const authCheck = require('./../sessions/middlewares/auth.check');
+
 const encryptPassword = require('./middlewares/encryptPassword');
-const usersValidationNew = require('./middlewares/users.validation.new');
-const usersValidationUpdate = require('./middlewares/users.validation.update');
 
 module.exports = (app) => {
-  const UsersModel = app.get('usersModel');
+  const Users = app.get('usersModel');
 
-  /**
-   * Add Authentication Middleware to all routes, except User registration.
-   */
-  router.use('/', async function (req, res, next) {
-    if (!req.context) {
-      req.context = {};
-    }
-
-    if (req.path === '/' && req.method === 'POST') {
-      next();
-      return;
-    }
-
-    try {
-      authCheck(app, req.headers, req.context);
-    } catch (error) {
-      let status;
-
-      switch (error.name) {
-      case 'UserNotAuthenticated':
-        status = 401;
-        break;
-      case 'TokenExpiredError':
-        status = 403;
-        break;
-      case 'JsonWebTokenError':
-        status = 403;
-        break;
-      default:
-        status = 500;
+  router.get('/', async (_, res) => {
+    await Users.find((err, users) => {
+      if (err) {
+        return res.status(500).json({ hasError: 1, error: err });
       }
-
-      res.status(status).json({ hasError: 1, message: error.message });
-      return;
-    }
-
-    next();
-  });
-
-  /**
-   * Retrieve all Users
-   */
-  router.get('/', (req, res) => {
-    UsersModel.find()
-      .then(data => {
-        res.json(data.map(user => {
-          return { id: user._id, email: user.email, username: user.username };
-        }));
-      });
-  });
-
-  // Validation Middleware.
-
-  router.post('/', usersValidationNew);
-
-  // Encrypt Password Middleware.
-
-  router.post('/', encryptPassword);
-
-  /**
-   * Create a new User.
-   */
-  router.post('/', (req, res) => {
-    UsersModel.create({
-      email: req.body.email,
-      username: req.body.username,
-      password: req.body.password
-    }, (err, user) => {
-      if (err) res.status(500).json({ hasError: 1, error: err });
-
-      res.json({ email: user.email, username: user.username });
+      return res.json(users);
     });
   });
 
-  // Validation Middleware.
+  router.post('/', encryptPassword);
+  router.post('/', async (req, res) => {
+    const { email, username, password } = req.body;
 
-  router.put('/:id', usersValidationUpdate);
-
-  /**
-   * Update a User.
-   */
-  router.put('/:id', (req, res) => {
-    const data = {
-      email: req.body.email,
-      username: req.body.username
-    };
-
-    UsersModel.findOneAndUpdate({ _id: req.params.id }, data, (err, user) => {
+    await Users.create({ email, username, password }, (err, user) => {
       if (err) {
-        res.status(500).json({ hasError: 1, error: err });
-        return;
+        return res.status(500).json({ hasError: 1, error: err });
       }
+      return res.json(user);
+    });
+  });
 
+  router.put('/:id', async (req, res) => {
+    const { email, username } = req.body;
+
+    await Users.findOneAndUpdate({ _id: req.params.id }, { email, username }, (err, user) => {
       if (!user) {
-        res.status(404).json({ hasError: 1, error: 'User not found.' });
-        return;
+        return res.status(404).json({ hasError: 1, error: 'User Not Found' });
       }
-
-      res.json(data);
+      if (err) {
+        return res.status(500).json({ hasError: 1, error: err });
+      }
+      return res.json(user);
     });
   });
 
