@@ -1,57 +1,24 @@
 const jwt = require('jsonwebtoken');
+const nconf = require('nconf');
 
-class JwtManager
-{
-  /**
-   * @param {string} secretKey
-   */
-  constructor(secretKey) {
-    this.secretKey = secretKey;
+class JWTManager {
+  constructor() {
+    this.secretKey = nconf.get('app_key');
   }
 
-  /**
-   * Create a new token.
-   *
-   * @param {string} userId
-   * @return {*}
-   */
   createToken(userId) {
-    return jwt.sign({
-      data: {}
-    }, this.secretKey, {
-      expiresIn: '4h',
-      subject: userId.toString()
-    });
+    return jwt.sign({}, this.secretKey, { expiresIn: '4h', subject: userId.toString() });
   }
 
-  /**
-   * Validate input token.
-   *
-   * @param {string} token
-   * @return {object}
-   */
   verify(token) {
-    let decoded;
-
     try {
-      decoded = jwt.verify(token, this.secretKey);
-    } catch(error) {
-      /*
-      error object structure (example):
-
-      err = {
-        name: 'TokenExpiredError',
-        message: 'jwt expired',
-        expiredAt: 1408621000
-      }
-      */
-      throw error;
+      return jwt.verify(token, this.secretKey);
+    } catch (err) {
+      throw err;
     }
-
-    return decoded;
   }
 }
 
-module.exports = function (secretKey) {
-  return new JwtManager(secretKey);
+module.exports = () => {
+  return new JWTManager();
 };
