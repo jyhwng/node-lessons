@@ -4,9 +4,44 @@ const userValidateNew = require('./middlewares/users.validation.new');
 const userValidateUpdate = require('./middlewares/users.validation.update');
 
 const encryptPassword = require('./middlewares/encryptPassword');
+const authCheck = require('../sessions/middlewares/auth.check');
 
 module.exports = (app) => {
   const Users = app.get('usersModel');
+
+  router.use('/', async function (req, res, next) {
+    if (!req.context) {
+      req.context = {};
+    }
+
+    if (req.path === '/' && req.method === 'POST') {
+      next();
+    }
+
+    try {
+      await authCheck(app, req.headers, req.context);
+    } catch (error) {
+      let status;
+
+      switch (error.name) {
+        case 'UserNotAuthenticated':
+          status = 401;
+          break;
+        case 'TokenExpiredError':
+          status = 403;
+          break;
+        case 'JsonWebTokenError':
+          status = 403;
+          break;
+        default:
+          status = 500;
+      }
+
+      return res.status(status).json({ hasError: 1, message: error.message });
+    }
+
+    next();
+  });
 
   router.get('/', async (_, res) => {
     await Users.find((err, users) => {

@@ -24,8 +24,9 @@ module.exports = async (req, res, next) => {
     return res.status(401).json({ hasError: 1, error: 'Login failed' });
   }
 
+  req.context.id = user._id;
   req.context.user = {
-    id: user._id,
+    _id: user._id,
     email: user.email,
     username: user.username,
     admin: user.admin || false,

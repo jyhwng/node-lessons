@@ -7,7 +7,7 @@ module.exports = (app) => {
 
   router.post('/', (req, res) => {
     const jwtManager = app.get('jwtManager');
-    const token = jwtManager.createToken(req.context.user.id);
+    const token = jwtManager.createToken(req.context.id);
     res.set('Authorization', `Bearer ${token}`);
     return res.json({ data: req.context.user });
   });
