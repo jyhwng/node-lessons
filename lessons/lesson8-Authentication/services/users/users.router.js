@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const userValidateNew = require('./middlewares/users.validation.new');
+const userValidateUpdate = require('./middlewares/users.validation.update');
 
 const encryptPassword = require('./middlewares/encryptPassword');
 
@@ -15,6 +17,7 @@ module.exports = (app) => {
     });
   });
 
+  router.post('/', userValidateNew);
   router.post('/', encryptPassword);
   router.post('/', async (req, res) => {
     const { email, username, password } = req.body;
@@ -27,6 +30,7 @@ module.exports = (app) => {
     });
   });
 
+  router.put('/:id', userValidateUpdate);
   router.put('/:id', async (req, res) => {
     const { email, username } = req.body;
 
