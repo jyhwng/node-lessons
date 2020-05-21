@@ -1,92 +1,49 @@
 const express = require('express');
-const app = express();
 const axios = require('axios');
 const bodyParser = require('body-parser');
-const JwtManager = require('./libraries/jwtManager');
 const nconf = require('nconf');
+
 const dataLogger = require('./libraries/dataLogger');
 const fileLogger = require('./libraries/fileLogger');
-const models = require('./models/models');
-const Redis = require('./libraries/redis');
-const services  = require('./services/services');
-
-nconf.argv()
-  .env()
-  .file({ file: 'config/secrets.json' });
-
 const mongoose = require('./mongoose');
+const JWTManager = require('./libraries/jwtManager');
+const models = require('./models');
+const services = require('./services');
 
-/**
- * Get allowed query parameters and return them in an object.
- *
- * @param {object} query
- * @param {array} allowedNames
- * @return {object}
- */
-const getQueryParameters = (query, allowedNames) => {
-  let queryObject = {};
+const app = express();
+const port = 3001;
 
-  for (const queryName in query) {
-    if (allowedNames.includes(queryName)) {
-      queryObject[queryName] = query[queryName];
-    }
-  }
+nconf
+  .argv()
+  .env()
+  .file({ file: __dirname + '/config/secrets.json' });
 
-  return queryObject;
-};
-
-const retrieveJobs = (req, res) => {
+const getJobs = (params) => {
   const baseUrl = 'https://jobs.github.com/positions.json';
-  let data;
 
-  axios.get(baseUrl, { params: getQueryParameters(req.query, ['location', 'full_time']) })
-    .then(response => { return data = response.data })
-    .then(() => { return dataLogger.saveToFile(JSON.stringify(data)) })
-    .then(() => res.json(data))
-    .catch(e => {
-      console.error('ERROR');
-      console.error(e);
-    });
+  return axios
+    .get(baseUrl, { params })
+    .then((response) => response.data)
+    .catch((err) => console.error(err));
 };
 
-/**
- * Configure Body Parser.
- */
-app.use(bodyParser.urlencoded({
-  extended: true
-}));
-app.use(bodyParser.json());
-
-/**
- * Use fileLogger middleware.
- */
+/** Middlewares */
 app.use(fileLogger);
+app.use(bodyParser.urlencoded({ extended: true }));
 
-/**
- * Set Redis Client.
- */
-app.set('redisClient', Redis(nconf.get('redis_password')));
-
-/**
- * Set Jwt Manager.
- */
-app.set('jwtManager', JwtManager(nconf.get('app_key'), app.get('redisClient')));
-
-/**
- * Set Mongoose Client.
- */
+/** DB */
 app.set('mongooseClient', mongoose);
-
-/**
- * Set Mongoose Models.
- */
 models(app);
 
-app.get('/', retrieveJobs);
-
-/**
- * Set Services.
- */
+/** Services */
 services(app);
+app.set('jwtManager', JWTManager());
 
-app.listen(3000, () => console.log('App listening on port 3000!'));
+app.get('/', (req, res) => {
+  getJobs(req.query)
+    .then((data) => dataLogger.saveToFile(JSON.stringify(data), 'userdata/data.json'))
+    .then((response) => res.send(response))
+    .catch((err) => console.error(err));
+});
+
+app.listen(port, () => console.log(`Listening to localhost:${port}`));
