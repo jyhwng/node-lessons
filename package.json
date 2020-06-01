@@ -4,6 +4,7 @@
   "description": "Series of lessons to learn the basics of NodeJs and Express.",
   "main": "index.js",
   "scripts": {
+    "watch": "nodemon",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": {
@@ -32,6 +33,7 @@
     "winston": "^3.2.1"
   },
   "devDependencies": {
-    "eslint": "^6.8.0"
+    "eslint": "^6.8.0",
+    "nodemon": "^2.0.4"
   }
 }
